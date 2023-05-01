@@ -21,7 +21,7 @@ const ids = {
   LED_SEQ_DEC: ["", "", "", "", "", "", "", ""],
 
   LED_SC_RST: "",
-  LED_Z: "",
+  LED_Z: ["", ""],
   LED_I: "",
 
   LED_CLK: [
@@ -38,13 +38,17 @@ const ids = {
   ],
 
   NUM_MEM_OUT: "text980",
+  NUM_MEM_DATA: "",
 
+  NUM_AR_DATA: "",
   NUM_AR_VALUE: "text1036",
   NUM_AR_OUT: "text972",
 
+  NUM_PC_DATA: "",
   NUM_PC_VALUE: "text1044",
   NUM_PC_OUT: "text964",
 
+  NUM_DR_DATA: "",
   NUM_DR_VALUE: "",
   NUM_DR_OUT: "",
 
@@ -57,6 +61,12 @@ const ids = {
   NUM_IR_DATA: "",
   NUM_IR_VALUE: "",
   NUM_IR_OUT: "inc dec",
-  NUM_COMMON_BUS_VALUE: ["text1814", "text988", "text996", "text1004"],
+
+  NUM_INP_DATA: "",
+  NUM_TR_DATA: "",
+  NUM_OUTR_DATA: "",
+  NUM_SC_VALUE: "",
+
+  NUM_COMMON_BUS_VALUE: "text1814",
   NUM_COMMON_BUS_SELECT: "",
 };
