@@ -1,6 +1,6 @@
 //let diagram: XMLDocument;
 
-type OutputCallback = (sender: Component, value: number) => void;
+type OutputCallback = (value: number) => void;
 type ID = string | null;
 type IDs = Array<string> | null;
 
@@ -12,7 +12,7 @@ abstract class Component {
     this.diagram = diagram;
   }
 
-  public abstract onOutputChanged(): void;
+  protected abstract onOutputChanged(): void;
 
   public get output(): number {
     return this._output;
@@ -22,12 +22,12 @@ abstract class Component {
     if (this._output !== value) {
       this._output = value;
       this.onOutputChanged();
-      this.onOutputChange?.(this, value);
+      this.onOutputChange?.(value);
     }
   }
 }
 
-class CommonBus extends Component {
+class Multiplexer extends Component {
   public outNUM: string | Array<string> | null;
   public selectNUM: string | Array<string> | null;
   public inputsLEDs: Array<string> | null;
@@ -40,7 +40,6 @@ class CommonBus extends Component {
     outNUM: string | Array<string> | null,
     selectNUM: string | Array<string> | null,
     inputsLEDs: Array<string> | null,
-    select = 0,
     inputCount = 8
   ) {
     super(diagram);
@@ -48,7 +47,6 @@ class CommonBus extends Component {
     this.selectNUM = selectNUM;
     this.inputsLEDs = inputsLEDs;
     this.inputs = Array<number>(inputCount);
-    this.select = select;
   }
 
   public set select(value: number) {
@@ -66,7 +64,7 @@ class CommonBus extends Component {
     if (this._select == index) this.select = index; //update select
   }
 
-  public onOutputChanged() {
+  protected override onOutputChanged() {
     if (this.outNUM) this.diagram.dig_write(this.outNUM, this.output, 4);
   }
 }
@@ -107,7 +105,7 @@ class Memory extends Component {
     }
   }
 
-  public onOutputChanged(): void {
+  protected override onOutputChanged(): void {
     if (this.outputNUM) {
       this.diagram.dig_write(this.outputNUM, this.output, 4);
     }
@@ -132,13 +130,12 @@ class Register extends Component {
     valueNUM: string | Array<string> | null,
     outputNUM: string | Array<string> | null,
     en = false,
-    nibbleCount = 4,
     bitCount = 16
   ) {
     super(diagram);
     this.en = en;
     this.maximum = Math.pow(2, bitCount);
-    this.nibbleCount = nibbleCount;
+    this.nibbleCount = Math.ceil(bitCount / 4);
     this.valueNUM = valueNUM;
     this.outputNUM = outputNUM;
   }
@@ -151,7 +148,7 @@ class Register extends Component {
     this.output = tmp;
   }
 
-  public onOutputChanged() {
+  protected override onOutputChanged() {
     if (this.valueNUM)
       this.diagram.dig_write(this.valueNUM, this.value, this.nibbleCount);
 
@@ -165,10 +162,9 @@ class Counter extends Register {
     diagram: Diagram,
     valueNUM: string | Array<string> | null,
     outputNUM: string | Array<string> | null,
-    nibbleCount = 4,
     bitCount = 16
   ) {
-    super(diagram, valueNUM, outputNUM, true, nibbleCount, bitCount);
+    super(diagram, valueNUM, outputNUM, true, bitCount);
   }
 }
 
@@ -219,7 +215,7 @@ class ALU extends Component {
     this.output = this.functions[this._func](this._portA, this._portB);
   }
 
-  public onOutputChanged() {
+  protected override onOutputChanged() {
     if (this.outNUM) this.diagram.dig_write(this.outNUM, this.output, 4);
   }
 }
@@ -248,7 +244,7 @@ class Decoder extends Component {
     this.output = value;
   }
 
-  public onOutputChanged(): void {
+  protected override onOutputChanged(): void {
     this.outputLEDs?.forEach((LEDId, index) => {
       if (this.output == index) this.diagram.high(LEDId);
       else this.diagram.low(LEDId);
@@ -266,13 +262,12 @@ class Encoder extends Component {
     diagram: Diagram,
     inputLEDIds: Array<string> | null,
     outNum: string | Array<string> | null,
-    nibbleCount = 1,
     inputCount = 5
   ) {
     super(diagram);
     this.inputLEDIds = inputLEDIds;
     this.outNum = outNum;
-    this.nibbleCount = nibbleCount;
+    this.nibbleCount = Math.ceil(inputCount / 16);
     this.inputs = Array<boolean>(inputCount);
   }
 
@@ -288,7 +283,7 @@ class Encoder extends Component {
     this.output = 0;
   }
 
-  public onOutputChanged(): void {
+  protected override onOutputChanged(): void {
     this.inputLEDIds?.forEach((id, i) => {
       if (this.inputs[i]) this.diagram.high(id);
       else this.diagram.low(id);
@@ -299,62 +294,110 @@ class Encoder extends Component {
   }
 }
 
-class ACz extends Component {
-  public outputLed: string | Array<string> | null;
-  constructor(diagram: Diagram, outputLed: string | Array<string> | null) {
-    super(diagram);
-    this.outputLed = outputLed;
-  }
-
-  public set input(value: number) {
-    this.output = value == 0 ? 1 : 0;
-  }
-
-  public onOutputChanged() {
-    if (this.outputLed) {
-      if (this.output) this.diagram.high(this.outputLed);
-      else this.diagram.low(this.outputLed);
-    }
-  }
-}
-
-class I extends Component {
-  public outputLed: string | Array<string> | null;
-  public inputLed: string | Array<string> | null;
-  constructor(
-    diagram: Diagram,
-    outputLed: string | Array<string> | null,
-    inputLed: string | Array<string> | null
-  ) {
-    super(diagram);
-    this.outputLed = outputLed;
-    this.inputLed = inputLed;
-  }
-
-  public set input(value: number) {
-    this.output = value >= Math.pow(2, 16) ? 1 : 0;
-  }
-
-  public onOutputChanged() {
-    if (this.outputLed) {
-      if (this.output) this.diagram.high(this.outputLed);
-      else this.diagram.low(this.outputLed);
-    }
-
-    if (this.inputLed) {
-      if (this.output) this.diagram.high(this.inputLed);
-      else this.diagram.low(this.inputLed);
-    }
-  }
-}
-
 class Diagram {
   ledGreen = "#00FF00";
   ledGray = "#333333";
 
+  Mem: Memory;
+  AR: Register;
+  PC: Register;
+  DR: Register;
+  ALU: ALU;
+  AC: Register;
+  IR: Register;
+  CommonBus: Multiplexer;
+  ALUEncoder: Encoder;
+  SeqDec: Decoder;
+  IncDec: Decoder;
+  SC: Counter;
+
+  ACZ = true;
+
   public diagramSVG: XMLDocument;
   constructor(diagram: XMLDocument) {
     this.diagramSVG = diagram;
+    this.Mem = new Memory(this, ids.NUM_MEM_OUT, 4096, null);
+    this.AR = new Register(this, ids.NUM_AC_VALUE, ids.NUM_AC_OUT, false, 12);
+    this.PC = new Register(this, ids.NUM_PC_VALUE, ids.NUM_PC_OUT, false, 12);
+    this.DR = new Register(this, ids.NUM_DR_VALUE, ids.NUM_DR_OUT, false, 16);
+    this.ALU = new ALU(this, ids.NUM_ALU_OUT, ids.NUM_ALU_FUNC);
+    this.AC = new Register(this, ids.NUM_AC_VALUE, ids.NUM_AC_OUT, false, 16);
+    this.IR = new Register(this, ids.NUM_IR_VALUE, ids.NUM_IR_OUT, false, 16);
+    this.CommonBus = new Multiplexer(
+      this,
+      [
+        ids.NUM_COMMON_BUS_VALUE,
+        ids.NUM_MEM_DATA,
+        ids.NUM_AR_DATA,
+        ids.NUM_PC_DATA,
+        ids.NUM_DR_DATA,
+        ids.NUM_INP_DATA,
+        ids.NUM_TR_DATA,
+        ids.NUM_IR_DATA,
+        ids.NUM_OUTR_DATA,
+      ],
+      ids.NUM_COMMON_BUS_SELECT,
+      ids.LED_COMBUS_MUX,
+      8
+    );
+    this.ALUEncoder = new Encoder(this, null, ids.NUM_ALU_FUNC, 5);
+    this.SeqDec = new Decoder(this, ids.LED_SEQ_DEC, [
+      "T0",
+      "T1",
+      "T2",
+      "T3",
+      "T4",
+      "T5",
+      "T6",
+      "T7",
+    ]);
+    this.IncDec = new Decoder(this, ids.LED_INC_DEC, [
+      "load",
+      "store",
+      "add",
+      "and",
+      "jump",
+      "jumpz",
+      "comp",
+      "lsl",
+    ]);
+    this.SC = new Counter(this, null, ids.NUM_SC_VALUE, 3); // for this one showing output in value box
+
+    this.Mem.onOutputChange = (v) => this.CommonBus.setInput(0, v);
+
+    this.Mem.onArrayChange = (v) => {
+      throw new Error("not implemented"); // TODO: implement this
+    };
+
+    this.AR.onOutputChange = (v) => {
+      this.Mem.addr = v;
+      this.CommonBus.setInput(1, v);
+    };
+
+    this.PC.onOutputChange = (v) => this.CommonBus.setInput(2, v);
+    this.DR.onOutputChange = (v) => {
+      this.ALU.portB = v;
+      this.CommonBus.setInput(3, v);
+    };
+    this.ALU.onOutputChange = (v) => (this.AC.data = v);
+    this.ALUEncoder.onOutputChange = (v) => (this.ALU.func = v);
+    this.AC.onOutputChange = (v) => {
+      this.ALU.portA = v;
+      this.CommonBus.setInput(4, v);
+      this.ACZ = v === 0;
+      v === 0 ? this.high(ids.LED_Z) : this.low(ids.LED_Z);
+    };
+    this.IR.onOutputChange = (v) => {
+      this.CommonBus.setInput(7, v);
+      this.IncDec.input = Math.floor(v / Math.pow(2, 12)) % Math.pow(2, 16); // extracting [15:12] bits
+    };
+    this.SC.onOutputChange = (v) => (this.SeqDec.input = v);
+    this.IncDec.onOutputChange = (v) => {
+      //TODO: implement this
+    };
+    this.SeqDec.onOutputChange = (v) => {
+      //TODO: implement this
+    };
   }
 
   public get(id: string) {
@@ -390,5 +433,44 @@ class Diagram {
   public dig_write(id: string | Array<string>, value: number, dig: number = 4) {
     let hexValue: string = value.toString(16).padStart(dig, "0");
     this.changeText(id, hexValue);
+  }
+
+  set loadM(value: boolean) {
+    this.Mem.WE = value;
+    this.signalLED(ids.LED_SIG_LOADM, value);
+  }
+
+  set loadAR(value: boolean) {
+    this.AR.load = value;
+    this.signalLED(ids.LED_SIG_LOADAR, value);
+  }
+
+  set loadPC(v: boolean) {
+    this.PC.load = v;
+    this.signalLED(ids.LED_SIG_LOADPC, v);
+  }
+
+  set enPC(v: boolean) {
+    this.PC.en = v;
+    this.signalLED(ids.LED_SIG_ENPC, v);
+  }
+
+  set loadDR(v: boolean) {
+    this.DR.load = v;
+    this.signalLED(ids.LED_SIG_LOADDR, v);
+  }
+
+  set loadAC(v: boolean) {
+    this.AC.load = v;
+    this.signalLED(ids.LED_SIG_LOADAC, v);
+  }
+
+  set loadIR(v: boolean) {
+    this.IR.load = v;
+    this.signalLED(ids.LED_SIG_LOADIR, v);
+  }
+
+  signalLED(LEDid: string | string[], value: boolean) {
+    value ? this.high(LEDid) : this.low(LEDid);
   }
 }
