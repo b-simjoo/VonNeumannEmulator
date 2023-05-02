@@ -75,7 +75,7 @@ class Memory extends Component {
   public onArrayChange: ((sender: Memory) => void) | null = null;
 
   private _addr: number = 0;
-  private memArray: Array<number>;
+  public memArray: Array<number>;
 
   public outputNUM: string | Array<string> | null;
 
@@ -100,6 +100,9 @@ class Memory extends Component {
   public tick(): void {
     this.output = this.memArray[this._addr] || 0; //update output on uprise clock
     if (this.WE) {
+      console.log(
+        "writing to memory,  address: " + this._addr + " data: " + this.data
+      );
       this.memArray[this._addr] = this.data;
       this.onArrayChange?.(this);
     }
@@ -118,6 +121,7 @@ class Register extends Component {
   public rst: boolean = false;
   public data: number = 0;
   public nibbleCount: number;
+  public name: string;
 
   private value: number = 0;
   private maximum: number;
@@ -127,12 +131,14 @@ class Register extends Component {
 
   constructor(
     diagram: Diagram,
+    name: string,
     valueNUM: string | Array<string> | null,
     outputNUM: string | Array<string> | null,
     en = false,
     bitCount = 16
   ) {
     super(diagram);
+    this.name = name;
     this.en = en;
     this.maximum = Math.pow(2, bitCount);
     this.nibbleCount = Math.ceil(bitCount / 4);
@@ -145,6 +151,8 @@ class Register extends Component {
     if (this.en) this.value = (this.value + 1) % this.maximum;
     if (this.load) this.value = this.data;
     if (this.rst) this.value = 0;
+    console.log(this.name + " " + this.value);
+    console.log(this.name + " " + tmp);
     this.output = tmp;
   }
 
@@ -160,11 +168,12 @@ class Register extends Component {
 class Counter extends Register {
   constructor(
     diagram: Diagram,
+    name: string,
     valueNUM: string | Array<string> | null,
     outputNUM: string | Array<string> | null,
     bitCount = 16
   ) {
-    super(diagram, valueNUM, outputNUM, true, bitCount);
+    super(diagram, name, valueNUM, outputNUM, true, bitCount);
   }
 }
 
@@ -252,6 +261,10 @@ class Decoder extends Component {
   }
 }
 
+interface Decoder {
+  [x: string]: boolean | any;
+}
+
 class Encoder extends Component {
   public inputLEDIds: Array<string> | null;
   public outNum: string | Array<string> | null;
@@ -317,12 +330,47 @@ class Diagram {
   constructor(diagram: XMLDocument) {
     this.diagramSVG = diagram;
     this.Mem = new Memory(this, ids.NUM_MEM_OUT, 4096, null);
-    this.AR = new Register(this, ids.NUM_AC_VALUE, ids.NUM_AC_OUT, false, 12);
-    this.PC = new Register(this, ids.NUM_PC_VALUE, ids.NUM_PC_OUT, false, 12);
-    this.DR = new Register(this, ids.NUM_DR_VALUE, ids.NUM_DR_OUT, false, 16);
+    this.AR = new Register(
+      this,
+      "AR",
+      ids.NUM_AC_VALUE,
+      ids.NUM_AC_OUT,
+      false,
+      12
+    );
+    this.PC = new Register(
+      this,
+      "PC",
+      ids.NUM_PC_VALUE,
+      ids.NUM_PC_OUT,
+      false,
+      12
+    );
+    this.DR = new Register(
+      this,
+      "DR",
+      ids.NUM_DR_VALUE,
+      ids.NUM_DR_OUT,
+      false,
+      16
+    );
     this.ALU = new ALU(this, ids.NUM_ALU_OUT, ids.NUM_ALU_FUNC);
-    this.AC = new Register(this, ids.NUM_AC_VALUE, ids.NUM_AC_OUT, false, 16);
-    this.IR = new Register(this, ids.NUM_IR_VALUE, ids.NUM_IR_OUT, false, 16);
+    this.AC = new Register(
+      this,
+      "AC",
+      ids.NUM_AC_VALUE,
+      ids.NUM_AC_OUT,
+      false,
+      16
+    );
+    this.IR = new Register(
+      this,
+      "IR",
+      ids.NUM_IR_VALUE,
+      ids.NUM_IR_OUT,
+      false,
+      16
+    );
     this.CommonBus = new Multiplexer(
       this,
       [
@@ -361,7 +409,7 @@ class Diagram {
       "comp",
       "lsl",
     ]);
-    this.SC = new Counter(this, null, ids.NUM_SC_VALUE, 3); // for this one showing output in value box
+    this.SC = new Counter(this, "SC", null, ids.NUM_SC_VALUE, 3); // for this one showing output in value box
 
     this.Mem.onOutputChange = (v) => this.CommonBus.setInput(0, v);
 
@@ -400,6 +448,84 @@ class Diagram {
     };
   }
 
+  public tick() {
+    let clks: { tick: () => void }[] = [
+      this.Mem,
+      this.AR,
+      this.PC,
+      this.DR,
+      this.AC,
+      this.IR,
+      this.SC,
+    ];
+    clks.forEach((comp) => {
+      comp.tick();
+    });
+
+    this.enPC = this.SeqDec.T0;
+
+    this.loadAC =
+      (this.IncDec.load && this.SeqDec.T4) ||
+      (this.IncDec.add && this.SeqDec.T4) ||
+      (this.IncDec.and && this.SeqDec.T4) ||
+      (this.IncDec.comp && this.SeqDec.T2) ||
+      (this.IncDec.lsl && this.SeqDec.T2);
+
+    this.loadM = this.IncDec.store && this.SeqDec.T3;
+
+    this.loadAR =
+      (this.IncDec.load && this.SeqDec.T2) ||
+      (this.IncDec.store && this.SeqDec.T2) ||
+      (this.IncDec.add && this.SeqDec.T3) ||
+      (this.IncDec.and && this.SeqDec.T2) ||
+      this.SeqDec.T0;
+
+    this.loadPC =
+      this.SeqDec.T2 && (this.IncDec.jump || (this.IncDec.jumpz && this.ACZ));
+
+    this.loadDR =
+      this.SeqDec.T3 &&
+      (this.IncDec.load || this.IncDec.add || this.IncDec.And);
+
+    this.loadIR = this.SeqDec.T1;
+
+    this.rstSC =
+      (this.IncDec.load && this.SeqDec.T4) ||
+      (this.IncDec.store && this.SeqDec.T3) ||
+      (this.IncDec.add && this.SeqDec.T4) ||
+      (this.IncDec.and && this.SeqDec.T4) ||
+      (this.IncDec.comp && this.SeqDec.T2) ||
+      (this.IncDec.lsl && this.SeqDec.T2) ||
+      (this.IncDec.jump && this.SeqDec.t2) ||
+      (this.IncDec.jumpz && this.SeqDec.t2);
+
+    this.CommonBus.select =
+      this.SeqDec.T1 ||
+      (this.SeqDec.T3 && this.IncDec.load) ||
+      (this.IncDec.Add && this.SeqDec.T2) ||
+      (this.IncDec.And && this.SeqDec.T3)
+        ? 0 // select mem
+        : this.SeqDec.T0
+        ? 2 // select PC
+        : this.IncDec.store && this.SeqDec.T3
+        ? 4 // select AC                                                                           // select DR
+        : this.ACZ ||
+          (this.SeqDec.T2 &&
+            (this.IncDec.load ||
+              this.IncDec.store ||
+              this.IncDec.add ||
+              this.IncDec.jump ||
+              this.IncDec.jumpz))
+        ? 1
+        : 0; // select IR
+
+    this.ALUEncoder.setInput(0, this.IncDec.add && this.SeqDec.T4);
+    this.ALUEncoder.setInput(1, this.IncDec.and && this.SeqDec.T4);
+    this.ALUEncoder.setInput(2, this.IncDec.comp && this.SeqDec.T2);
+    this.ALUEncoder.setInput(3, this.IncDec.lsl && this.SeqDec.T2);
+    this.ALUEncoder.setInput(4, this.IncDec.load && this.SeqDec.T4);
+  }
+
   public get(id: string) {
     return this.diagramSVG.getElementById(id);
   }
@@ -428,6 +554,10 @@ class Diagram {
         child.innerHTML = value;
       }
     }
+  }
+
+  public loadMemArray(array: Array<number>) {
+    this.Mem.memArray = array;
   }
 
   public dig_write(id: string | Array<string>, value: number, dig: number = 4) {
@@ -468,6 +598,11 @@ class Diagram {
   set loadIR(v: boolean) {
     this.IR.load = v;
     this.signalLED(ids.LED_SIG_LOADIR, v);
+  }
+
+  set rstSC(v: boolean) {
+    this.SC.rst = v;
+    this.signalLED(ids.LED_SIG_RSTSC, v);
   }
 
   signalLED(LEDid: string | string[], value: boolean) {

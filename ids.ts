@@ -20,7 +20,7 @@ const ids = {
   LED_INC_DEC: ["", "", "", "", "", "", "", ""],
   LED_SEQ_DEC: ["", "", "", "", "", "", "", ""],
 
-  LED_SC_RST: "",
+  LED_SIG_RSTSC: [""],
   LED_Z: ["", ""],
   LED_I: "",
 
