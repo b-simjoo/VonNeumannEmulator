@@ -4,6 +4,10 @@ type OutputCallback = (value: number) => void;
 type ID = string | null;
 type IDs = Array<string> | null;
 
+function HEX(value: number, pad = 4): string {
+  return value.toString(16).padStart(pad, "0");
+}
+
 abstract class Component {
   public onOutputChange: OutputCallback | null = null;
   public diagram: Diagram;
@@ -59,9 +63,16 @@ class Multiplexer extends Component {
     this.output = this.inputs[value] || 0;
   }
 
+  public get select() {
+    return this._select;
+  }
+
   public setInput(index: number, value: number) {
     this.inputs[index] = value;
-    if (this._select == index) this.select = index; //update select
+  }
+
+  public update() {
+    this.output = this.inputs[this._select] || 0;
   }
 
   protected override onOutputChanged() {
@@ -75,21 +86,28 @@ class Memory extends Component {
   public onArrayChange: ((sender: Memory) => void) | null = null;
 
   private _addr: number = 0;
-  public memArray: Array<number>;
+  private _memArray: Array<number>;
 
   public outputNUM: string | Array<string> | null;
 
   constructor(
     diagram: Diagram,
     outputNUM: string | Array<string> | null,
-    memSize = 4096,
-    content: Array<number> | null = null
+    memSize = 4096
   ) {
     super(diagram);
     this.outputNUM = outputNUM;
 
-    if (content && content.length === memSize) this.memArray = content;
-    else this.memArray = Array<number>(memSize);
+    this._memArray = Array<number>(memSize);
+  }
+
+  public get memArray(): number[] {
+    return this._memArray;
+  }
+
+  public set memArray(value) {
+    this._memArray = value;
+    this.output = this._memArray[this._addr] || 0;
   }
 
   public set addr(value: number) {
@@ -148,12 +166,32 @@ class Register extends Component {
 
   public tick(): void {
     let tmp = this.value;
+    if (this.load) {
+      this.value = this.data;
+    }
     if (this.en) this.value = (this.value + 1) % this.maximum;
-    if (this.load) this.value = this.data;
-    if (this.rst) this.value = 0;
-    console.log(this.name + " " + this.value);
-    console.log(this.name + " " + tmp);
-    this.output = tmp;
+    if (this.rst) {
+      this.value = 0;
+    }
+    console.log(
+      this.name +
+        " Value:" +
+        HEX(this.value) +
+        ", Data:" +
+        HEX(this.data) +
+        " " +
+        HEX(tmp) +
+        "=>" +
+        HEX(this.value) +
+        "  [load:" +
+        (this.load ? 1 : 0) +
+        ", en:" +
+        (this.en ? 1 : 0) +
+        ", rst:" +
+        (this.rst ? 1 : 0) +
+        "]"
+    );
+    this.output = this.value;
   }
 
   protected override onOutputChanged() {
@@ -323,13 +361,14 @@ class Diagram {
   SeqDec: Decoder;
   IncDec: Decoder;
   SC: Counter;
+  CLKup = false;
 
   ACZ = true;
 
   public diagramSVG: XMLDocument;
   constructor(diagram: XMLDocument) {
     this.diagramSVG = diagram;
-    this.Mem = new Memory(this, ids.NUM_MEM_OUT, 4096, null);
+    this.Mem = new Memory(this, ids.NUM_MEM_OUT, 4096);
     this.AR = new Register(
       this,
       "AR",
@@ -411,10 +450,13 @@ class Diagram {
     ]);
     this.SC = new Counter(this, "SC", null, ids.NUM_SC_VALUE, 3); // for this one showing output in value box
 
-    this.Mem.onOutputChange = (v) => this.CommonBus.setInput(0, v);
+    this.Mem.onOutputChange = (v) => {
+      console.log("mem output changed=>" + v);
+      this.CommonBus.setInput(0, v);
+    };
 
     this.Mem.onArrayChange = (v) => {
-      throw new Error("not implemented"); // TODO: implement this
+      // TODO: implement this
     };
 
     this.AR.onOutputChange = (v) => {
@@ -446,9 +488,88 @@ class Diagram {
     this.SeqDec.onOutputChange = (v) => {
       //TODO: implement this
     };
+    this.CommonBus.onOutputChange = (v) => {
+      console.log("commonBus output changed =>" + v);
+      [this.Mem, this.DR, this.IR].forEach((comp) => {
+        comp.data = v;
+      });
+      this.AR.data = v % Math.pow(2, 12);
+      this.PC.data = v % Math.pow(2, 12);
+    };
   }
 
   public tick() {
+    if (this.CLKup) {
+      this.tickRegisters();
+    } else {
+      this.CommonBus.select =
+        this.SeqDec.T1 ||
+        (this.SeqDec.T3 && this.IncDec.load) ||
+        (this.IncDec.Add && this.SeqDec.T2) ||
+        (this.IncDec.And && this.SeqDec.T3)
+          ? 0 // select mem
+          : this.SeqDec.T0
+          ? 2 // select PC
+          : this.IncDec.store && this.SeqDec.T3
+          ? 4 // select AC
+          : this.SeqDec.T2 &&
+            (this.IncDec.load ||
+              this.IncDec.store ||
+              this.IncDec.add ||
+              this.IncDec.jump ||
+              (this.IncDec.jumpz && this.ACZ))
+          ? 7 // select IR
+          : 0; // Default
+      this.CommonBus.update();
+      console.log("common bus select: " + this.CommonBus.select);
+
+      this.enPC = this.SeqDec.T0;
+
+      this.loadAC =
+        (this.IncDec.load && this.SeqDec.T4) ||
+        (this.IncDec.add && this.SeqDec.T4) ||
+        (this.IncDec.and && this.SeqDec.T4) ||
+        (this.IncDec.comp && this.SeqDec.T2) ||
+        (this.IncDec.lsl && this.SeqDec.T2);
+
+      this.loadM = this.IncDec.store && this.SeqDec.T3;
+
+      this.loadAR =
+        (this.IncDec.load && this.SeqDec.T2) ||
+        (this.IncDec.store && this.SeqDec.T2) ||
+        (this.IncDec.add && this.SeqDec.T2) ||
+        (this.IncDec.and && this.SeqDec.T3) ||
+        this.SeqDec.T0;
+
+      this.loadPC =
+        this.SeqDec.T2 && (this.IncDec.jump || (this.IncDec.jumpz && this.ACZ));
+
+      this.loadDR =
+        this.SeqDec.T3 &&
+        (this.IncDec.load || this.IncDec.add || this.IncDec.And);
+
+      this.loadIR = this.SeqDec.T1;
+
+      this.rstSC =
+        (this.IncDec.load && this.SeqDec.T4) ||
+        (this.IncDec.store && this.SeqDec.T3) ||
+        (this.IncDec.add && this.SeqDec.T4) ||
+        (this.IncDec.and && this.SeqDec.T4) ||
+        (this.IncDec.comp && this.SeqDec.T2) ||
+        (this.IncDec.lsl && this.SeqDec.T2) ||
+        (this.IncDec.jump && this.SeqDec.t2) ||
+        (this.IncDec.jumpz && this.SeqDec.t2);
+
+      this.ALUEncoder.setInput(0, this.IncDec.add && this.SeqDec.T4);
+      this.ALUEncoder.setInput(1, this.IncDec.and && this.SeqDec.T4);
+      this.ALUEncoder.setInput(2, this.IncDec.comp && this.SeqDec.T2);
+      this.ALUEncoder.setInput(3, this.IncDec.lsl && this.SeqDec.T2);
+      this.ALUEncoder.setInput(4, this.IncDec.load && this.SeqDec.T4);
+    }
+    this.CLKup = !this.CLKup;
+  }
+
+  tickRegisters() {
     let clks: { tick: () => void }[] = [
       this.Mem,
       this.AR,
@@ -461,69 +582,6 @@ class Diagram {
     clks.forEach((comp) => {
       comp.tick();
     });
-
-    this.enPC = this.SeqDec.T0;
-
-    this.loadAC =
-      (this.IncDec.load && this.SeqDec.T4) ||
-      (this.IncDec.add && this.SeqDec.T4) ||
-      (this.IncDec.and && this.SeqDec.T4) ||
-      (this.IncDec.comp && this.SeqDec.T2) ||
-      (this.IncDec.lsl && this.SeqDec.T2);
-
-    this.loadM = this.IncDec.store && this.SeqDec.T3;
-
-    this.loadAR =
-      (this.IncDec.load && this.SeqDec.T2) ||
-      (this.IncDec.store && this.SeqDec.T2) ||
-      (this.IncDec.add && this.SeqDec.T3) ||
-      (this.IncDec.and && this.SeqDec.T2) ||
-      this.SeqDec.T0;
-
-    this.loadPC =
-      this.SeqDec.T2 && (this.IncDec.jump || (this.IncDec.jumpz && this.ACZ));
-
-    this.loadDR =
-      this.SeqDec.T3 &&
-      (this.IncDec.load || this.IncDec.add || this.IncDec.And);
-
-    this.loadIR = this.SeqDec.T1;
-
-    this.rstSC =
-      (this.IncDec.load && this.SeqDec.T4) ||
-      (this.IncDec.store && this.SeqDec.T3) ||
-      (this.IncDec.add && this.SeqDec.T4) ||
-      (this.IncDec.and && this.SeqDec.T4) ||
-      (this.IncDec.comp && this.SeqDec.T2) ||
-      (this.IncDec.lsl && this.SeqDec.T2) ||
-      (this.IncDec.jump && this.SeqDec.t2) ||
-      (this.IncDec.jumpz && this.SeqDec.t2);
-
-    this.CommonBus.select =
-      this.SeqDec.T1 ||
-      (this.SeqDec.T3 && this.IncDec.load) ||
-      (this.IncDec.Add && this.SeqDec.T2) ||
-      (this.IncDec.And && this.SeqDec.T3)
-        ? 0 // select mem
-        : this.SeqDec.T0
-        ? 2 // select PC
-        : this.IncDec.store && this.SeqDec.T3
-        ? 4 // select AC                                                                           // select DR
-        : this.ACZ ||
-          (this.SeqDec.T2 &&
-            (this.IncDec.load ||
-              this.IncDec.store ||
-              this.IncDec.add ||
-              this.IncDec.jump ||
-              this.IncDec.jumpz))
-        ? 1
-        : 0; // select IR
-
-    this.ALUEncoder.setInput(0, this.IncDec.add && this.SeqDec.T4);
-    this.ALUEncoder.setInput(1, this.IncDec.and && this.SeqDec.T4);
-    this.ALUEncoder.setInput(2, this.IncDec.comp && this.SeqDec.T2);
-    this.ALUEncoder.setInput(3, this.IncDec.lsl && this.SeqDec.T2);
-    this.ALUEncoder.setInput(4, this.IncDec.load && this.SeqDec.T4);
   }
 
   public get(id: string) {
@@ -561,48 +619,56 @@ class Diagram {
   }
 
   public dig_write(id: string | Array<string>, value: number, dig: number = 4) {
-    let hexValue: string = value.toString(16).padStart(dig, "0");
+    let hexValue: string = HEX(value, dig);
     this.changeText(id, hexValue);
   }
 
   set loadM(value: boolean) {
     this.Mem.WE = value;
     this.signalLED(ids.LED_SIG_LOADM, value);
+    console.log("loadM: " + value);
   }
 
   set loadAR(value: boolean) {
     this.AR.load = value;
     this.signalLED(ids.LED_SIG_LOADAR, value);
+    console.log("loadAR: " + value);
   }
 
   set loadPC(v: boolean) {
     this.PC.load = v;
     this.signalLED(ids.LED_SIG_LOADPC, v);
+    console.log("loadPC: " + v);
   }
 
   set enPC(v: boolean) {
     this.PC.en = v;
     this.signalLED(ids.LED_SIG_ENPC, v);
+    console.log("enPC: " + v);
   }
 
   set loadDR(v: boolean) {
     this.DR.load = v;
     this.signalLED(ids.LED_SIG_LOADDR, v);
+    console.log("loadDR: " + v);
   }
 
   set loadAC(v: boolean) {
     this.AC.load = v;
     this.signalLED(ids.LED_SIG_LOADAC, v);
+    console.log("loadAC: " + v);
   }
 
   set loadIR(v: boolean) {
     this.IR.load = v;
     this.signalLED(ids.LED_SIG_LOADIR, v);
+    console.log("loadIR: " + v);
   }
 
   set rstSC(v: boolean) {
     this.SC.rst = v;
     this.signalLED(ids.LED_SIG_RSTSC, v);
+    console.log("rstSC: " + v);
   }
 
   signalLED(LEDid: string | string[], value: boolean) {
