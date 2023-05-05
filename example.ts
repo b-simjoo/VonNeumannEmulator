@@ -1,5 +1,54 @@
 let diagram: Diagram;
 let ops = ["load", "store", "add", "and", "jump", "jumpz", "comp", "lsl"];
+let RTLs = [
+  [
+    "T0: AR <- PC, PC <- PC+1",
+    "T1: IR <- Mem[AR]",
+    "Load.T2: AR <- IR[11:0]",
+    "Load.T3: DR <- Mem[AR]",
+    "Load.T4: AC <- DR, SC <- 0",
+  ],
+  [
+    "T0: AR <- PC, PC <- PC+1",
+    "T1: IR <- Mem[AR]",
+    "Store.T2: AR <- IR[11:0]",
+    "Store.T3: Mem[AR] <- AC, SC <- 0",
+  ],
+  [
+    "T0: AR <- PC, PC <- PC+1",
+    "T1: IR <- Mem[AR]",
+    "Add.T2: AR <- IR[11:0]",
+    "Add.T2: DR <- Mem[AR]",
+    "Add.T4: AC <- AC+DR, SC <- 0",
+  ],
+  [
+    "T0: AR <- PC, PC <- PC+1",
+    "T1: IR <- Mem[AR]",
+    "And.T2: AR <- IR[11:0]",
+    "And.T3: DR <- Mem[AR]",
+    "And.T4: AC <- AC & DR, SC <- 0",
+  ],
+  [
+    "T0: AR <- PC, PC <- PC+1",
+    "T1: IR <- Mem[AR]",
+    "Jumpx.T2: PC <- IR[11:0], SC <- 0",
+  ],
+  [
+    "T0: AR <- PC, PC <- PC+1",
+    "T1: IR <- Mem[AR]",
+    "Jumpz.T2.z: PC <- IR[11:0], Jumpz.T2: SC <- 0",
+  ],
+  [
+    "T0: AR <- PC, PC <- PC+1",
+    "T1: IR <- Mem[AR]",
+    "Comp.T3: AC <- ~AC, SC <- 0",
+  ],
+  [
+    "T0: AR <- PC, PC <- PC+1",
+    "T1: IR <- Mem[AR]",
+    "LSL.T2: AC <- LSL(AC), SC <- 0",
+  ],
+];
 
 function asmbler(asmCode: string[]): number[] {
   let res = new Array<number>(4096);

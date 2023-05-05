@@ -347,7 +347,7 @@ class Encoder extends Component {
 
 class Diagram {
   ledGreen = "#00FF00";
-  ledGray = "#333333";
+  ledGray = "#E6E6E6";
 
   Mem: Memory;
   AR: Register;
@@ -393,7 +393,7 @@ class Diagram {
       false,
       16
     );
-    this.ALU = new ALU(this, ids.NUM_ALU_OUT, ids.NUM_ALU_FUNC);
+    this.ALU = new ALU(this, ids.NUM_ALU_OUT, ids.TXT_ALU_FUNC);
     this.AC = new Register(
       this,
       "AC",
@@ -402,14 +402,7 @@ class Diagram {
       false,
       16
     );
-    this.IR = new Register(
-      this,
-      "IR",
-      ids.NUM_IR_VALUE,
-      ids.NUM_IR_OUT,
-      false,
-      16
-    );
+    this.IR = new Register(this, "IR", ids.NUM_IR_VALUE, null, false, 16);
     this.CommonBus = new Multiplexer(
       this,
       [
@@ -418,7 +411,6 @@ class Diagram {
         ids.NUM_AR_DATA,
         ids.NUM_PC_DATA,
         ids.NUM_DR_DATA,
-        ids.NUM_INP_DATA,
         ids.NUM_TR_DATA,
         ids.NUM_IR_DATA,
         ids.NUM_OUTR_DATA,
@@ -427,7 +419,7 @@ class Diagram {
       ids.LED_COMBUS_MUX,
       8
     );
-    this.ALUEncoder = new Encoder(this, null, ids.NUM_ALU_FUNC, 5);
+    this.ALUEncoder = new Encoder(this, null, ids.NUM_ALU_FUNCNUM, 5);
     this.SeqDec = new Decoder(this, ids.LED_SEQ_DEC, [
       "T0",
       "T1",
@@ -474,12 +466,13 @@ class Diagram {
     this.AC.onOutputChange = (v) => {
       this.ALU.portA = v;
       this.CommonBus.setInput(4, v);
-      this.ACZ = v === 0;
-      v === 0 ? this.high(ids.LED_Z) : this.low(ids.LED_Z);
+      this.ACZ = this.signalLED(ids.LED_Z, v === 0);
     };
     this.IR.onOutputChange = (v) => {
       this.CommonBus.setInput(7, v);
-      this.IncDec.input = Math.floor(v / Math.pow(2, 12)) % Math.pow(2, 16); // extracting [15:12] bits
+      let inc = Math.floor(v / Math.pow(2, 12)) % Math.pow(2, 16);
+      this.IncDec.input = inc; // extracting [15:12] bits
+      this.dig_write(ids.NUM_IR_OUT, inc, 1);
     };
     this.SC.onOutputChange = (v) => (this.SeqDec.input = v);
     this.IncDec.onOutputChange = (v) => {
@@ -560,12 +553,28 @@ class Diagram {
         (this.IncDec.jump && this.SeqDec.t2) ||
         (this.IncDec.jumpz && this.SeqDec.t2);
 
-      this.ALUEncoder.setInput(0, this.IncDec.add && this.SeqDec.T4);
-      this.ALUEncoder.setInput(1, this.IncDec.and && this.SeqDec.T4);
-      this.ALUEncoder.setInput(2, this.IncDec.comp && this.SeqDec.T2);
-      this.ALUEncoder.setInput(3, this.IncDec.lsl && this.SeqDec.T2);
-      this.ALUEncoder.setInput(4, this.IncDec.load && this.SeqDec.T4);
+      this.ALUEncoder.setInput(
+        0,
+        this.signalLED(ids.LED_SIG_ADD_T4, this.IncDec.add && this.SeqDec.T4)
+      );
+      this.ALUEncoder.setInput(
+        1,
+        this.signalLED(ids.LED_SIG_AND_T4, this.IncDec.and && this.SeqDec.T4)
+      );
+      this.ALUEncoder.setInput(
+        2,
+        this.signalLED(ids.LED_SIG_COMP_T2, this.IncDec.comp && this.SeqDec.T2)
+      );
+      this.ALUEncoder.setInput(
+        3,
+        this.signalLED(ids.LED_SIG_LSL_T2, this.IncDec.lsl && this.SeqDec.T2)
+      );
+      this.ALUEncoder.setInput(
+        4,
+        this.signalLED(ids.LED_SIG_LOAD_T4, this.IncDec.load && this.SeqDec.T4)
+      );
     }
+    this.signalLED(ids.LED_CLK, this.CLKup);
     this.CLKup = !this.CLKup;
   }
 
@@ -671,7 +680,8 @@ class Diagram {
     console.log("rstSC: " + v);
   }
 
-  signalLED(LEDid: string | string[], value: boolean) {
+  signalLED(LEDid: string | string[], value: boolean): boolean {
     value ? this.high(LEDid) : this.low(LEDid);
+    return value;
   }
 }
