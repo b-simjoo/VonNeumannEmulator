@@ -73,6 +73,13 @@ window.onload = function () {
     diagram = new Diagram(svg);
   } else throw new Error("Could not find diagram");
 
+  // Turn div into an editor
+  const el = document.getElementById("editor");
+  if (el) {
+    editor(el);
+    el?.focus();
+  }
+
   diagram.loadMemArray(
     asmbler(["load 6", "add 7", "store 8", "jump 3", "", "", "5", "4"])
   );

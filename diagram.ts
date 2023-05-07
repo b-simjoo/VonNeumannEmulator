@@ -83,7 +83,9 @@ class Multiplexer extends Component {
 class Memory extends Component {
   public WE: boolean = false;
   public data: number = 0;
-  public onArrayChange: ((sender: Memory) => void) | null = null;
+  public onArrayChange:
+    | ((sender: Memory, index: number, data: number) => void)
+    | null = null;
 
   private _addr: number = 0;
   private _memArray: Array<number>;
@@ -122,7 +124,7 @@ class Memory extends Component {
         "writing to memory,  address: " + this._addr + " data: " + this.data
       );
       this.memArray[this._addr] = this.data;
-      this.onArrayChange?.(this);
+      this.onArrayChange?.(this, this.addr, this.data);
     }
   }
 

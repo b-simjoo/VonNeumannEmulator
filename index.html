@@ -5,12 +5,36 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="ids.js"></script>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="codeEditor.css" />
     <title>Document</title>
   </head>
   <body>
-    <object id="diagram" data="Diagram.svg" type="image/svg+xml"></object>
+    <div class="container">
+      <div class="left-panel">
+        <div class="control">
+          <button>Compile</button>
+          <button>Run</button>
+          <button>Reset</button>
+        </div>
+        <div id="editor" contenteditable="true" spellcheck="false">
+          <div>load 6</div>
+          <div>add 7</div>
+          <div>store 8</div>
+          <div>jump 3</div>
+          <div><br /></div>
+          <div><br /></div>
+          <div>5</div>
+          <div>4</div>
+        </div>
+        <div id="memory"></div>
+      </div>
+
+      <object id="diagram" data="Diagram.svg" type="image/svg+xml"></object>
+    </div>
     <script src="component.js"></script>
     <script src="diagram.js"></script>
-    <script src="example.js"></script>
+    <script src="codeEditor.js"></script>
+    <script src="app.js"></script>
   </body>
 </html>

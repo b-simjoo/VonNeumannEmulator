@@ -1,0 +1,45 @@
+#editor {
+    font-family: 'Fira Code' ,'Roboto Mono', monospace;
+    font-size: 18px;
+    outline: none;
+    overflow-y: auto;
+    padding-left: 48px;
+    counter-reset: line -1;
+}
+
+#editor div {
+    color: crimson;
+    display: block;
+    position: relative;
+    white-space: pre-wrap;
+    padding: 0;
+}
+
+#editor div::before {
+    color: #111;
+    content: counter(line);
+    counter-increment: line;
+    position: absolute;
+    right: calc(100% + 10px);
+    padding-right: 5px;
+    opacity: 0.5;
+    border-right: 1px solid #111;
+}
+
+#editor .comment {
+    color: gray;
+}
+
+#editor .func{
+    color: darkgreen;
+    font-weight: bold;
+}
+
+#editor .param {
+    color: dodgerblue;
+}
+
+#editor .number{
+    color: rgb(119, 32, 0);
+    font-style: italic;
+}

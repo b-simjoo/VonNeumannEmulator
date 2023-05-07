@@ -1,0 +1,41 @@
+html, body{
+    width: 100vw;
+    height: 100vh;
+    padding: 0;
+    margin: 0;
+}
+
+*{
+    box-sizing: border-box;
+}
+
+.container{
+    display: flex;
+    flex-direction: row;
+    width: 100vw;
+    height: 100vh;
+}
+
+.container>.left-panel{
+    display: block;
+    float: left;
+    flex: 1 1 auto;
+    height: 100%;
+}
+
+.container >#diagram{
+    float:right;
+    flex: 0 0 auto;
+}
+
+#editor{
+    display: block;
+    height: calc(100% - 20px);
+    border: 1px solid silver;
+    border-radius: 10px;
+    background-color: azure;
+    margin: 10px;
+}
+#diagram{
+    max-height: 100vh;
+}
