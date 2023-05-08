@@ -23,16 +23,18 @@
           <button id="pause" disabled="true" onclick="stop()">Pause</button>
           <button onclick="next()">Next</button>
           <button onclick="reset();">Reset</button>
-          Speed:
-          <input
-            type="range"
-            min="1000"
-            max="10000"
-            value="1000"
-            class="slider"
-            id="speed"
-          />
-          <span id="freq">500 mHz</span>
+          <div style="display: inline-block">
+            Speed:
+            <input
+              type="range"
+              min="1000"
+              max="10000"
+              value="1000"
+              class="slider"
+              id="speed"
+            />
+            <span id="freq">500 mHz</span>
+          </div>
         </div>
         <div id="editor" contenteditable="true" spellcheck="false">
           <div>load 6</div>
@@ -55,10 +57,9 @@
       ></object>
     </div>
 
-    <script src="build/ids.js"></script>
-    <script src="build/component.js"></script>
-    <script src="build/diagram.js"></script>
-    <script src="build/codeEditor.js"></script>
-    <script src="build/app.js"></script>
+    <script src="ids.ts"></script>
+    <script src="diagram.ts"></script>
+    <script src="codeEditor.ts"></script>
+    <script src="app.ts"></script>
   </body>
 </html>

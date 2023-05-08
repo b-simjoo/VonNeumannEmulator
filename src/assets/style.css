@@ -69,6 +69,10 @@ html, body{
     overflow: scroll;
 }
 
+#memory table{
+    margin: 0 auto;
+}
+
 #memory td{
     transition: background-color 1s;
 }

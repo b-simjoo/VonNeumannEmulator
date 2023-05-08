@@ -1,6 +1,7 @@
 let diagram: Diagram;
 let editor: HTMLElement | null;
 let memory: HTMLElement | null;
+let memBoxWidth = 8;
 let state: HTMLElement | null;
 let ops = ["load", "store", "add", "and", "jump", "jumpz", "comp", "lsl"];
 let RTLs = [
@@ -98,22 +99,22 @@ function ce(
   return <Node>elem;
 }
 
-function renderMem(width = 13) {
+function renderMem() {
   return ce("table", () => {
     let rows = [
       ce("tr", ce("th", " "), () => {
         let cols = [];
-        for (let c = 0; c < width; c++) {
+        for (let c = 0; c < memBoxWidth; c++) {
           cols.push(ce("th", HEX(c)));
         }
         return cols;
       }),
     ];
-    for (let i = 0; i < 4095; i += width) {
+    for (let i = 0; i < 4095; i += memBoxWidth) {
       rows.push(
         ce("tr", ce("td", HEX(i, 3)), () => {
           let cols = [];
-          for (let c = 0; c < width; c++) {
+          for (let c = 0; c < memBoxWidth; c++) {
             cols.push(
               ce(
                 {
@@ -138,7 +139,9 @@ function resetMem() {
   document.getElementById("memory")?.append(memory);
   diagram.Mem.onArrayChange = (s, i, v) => {
     let td =
-      memory?.childNodes[Math.floor(i / 13) + 1]?.childNodes[(i % 13) + 1];
+      memory?.childNodes[Math.floor(i / memBoxWidth) + 1]?.childNodes[
+        (i % memBoxWidth) + 1
+      ];
     (<HTMLElement>td).classList.add("changed");
     if (v) (<HTMLElement>td).classList.remove("zero");
     else (<HTMLElement>td).classList.add("zero");

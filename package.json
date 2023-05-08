@@ -1,0 +1,16 @@
+{
+  "name": "VonNeumannEmulator",
+  "version": "1.0.0",
+  "description": "An Emulator for Von Neumann CPU (minimized) for teaching purposes",
+  "source": "src/index.html",
+  "scripts": {
+    "start": "parcel",
+    "build": "parcel build"
+  },
+  "devDependencies": {
+    "parcel": "latest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
