@@ -1,0 +1,2 @@
+#editor{counter-reset:line -1;outline:none;padding-left:48px;font-family:Fira Code,Roboto Mono,monospace;font-size:18px;overflow-y:auto}#editor div{color:#dc143c;white-space:pre-wrap;padding:0;display:block;position:relative}#editor div:before{color:#111;content:counter(line);counter-increment:line;opacity:.5;padding-right:5px;position:absolute;right:calc(100% + 10px)}#editor .comment{color:gray}#editor .func{color:#006400;font-weight:700}#editor .param{color:#1e90ff}#editor .number{color:#772000;font-style:italic}
+/*# sourceMappingURL=index.1deb134c.css.map */
