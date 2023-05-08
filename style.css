@@ -7,6 +7,8 @@ html, body{
 
 *{
     box-sizing: border-box;
+    padding: 0;
+    margin: 0;
 }
 
 .container{
@@ -16,11 +18,36 @@ html, body{
     height: 100vh;
 }
 
+.slider{
+    transform: translateY(5px);
+}
+
 .container>.left-panel{
-    display: block;
+    display:flex;
+    flex-direction: column;
     float: left;
     flex: 1 1 auto;
     height: 100%;
+    padding: 10px;
+    padding-bottom: 0;
+}
+.container>.left-panel>*{
+    margin-bottom: 10px;
+}
+.container>.left-panel>*:last-child {
+    margin-bottom: 0;
+}
+.container>.left-panel>#editor{
+    flex: 2 0 50px;
+}
+.container>.left-panel>#memory {
+    display: block;
+    flex: 2 0 50px;
+}
+
+.container>.left-panel>#state {
+    display: block;
+    flex: 0 0 auto;
 }
 
 .container >#diagram{
@@ -28,14 +55,39 @@ html, body{
     flex: 0 0 auto;
 }
 
-#editor{
+#editor, #memory{
     display: block;
-    height: calc(100% - 20px);
     border: 1px solid silver;
     border-radius: 10px;
     background-color: azure;
-    margin: 10px;
+}
+
+#memory{
+    font-family: 'Fira Code',
+        'Roboto Mono',
+        monospace;
+    overflow: scroll;
+}
+
+#memory td{
+    transition: background-color 1s;
+}
+
+#memory td.zero{
+    color: darkgrey;
+}
+
+#memory td.changed {
+    background-color: chartreuse;
 }
 #diagram{
     max-height: 100vh;
+}
+#state{
+    font-family: 'Fira Code',
+            'Roboto Mono',
+            monospace;
+    background-color: burlywood;
+    border: 1px solid #111;
+    padding: 2px;
 }

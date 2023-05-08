@@ -7,15 +7,33 @@
     <script src="ids.js"></script>
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="codeEditor.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
     <title>Document</title>
   </head>
   <body>
     <div class="container">
       <div class="left-panel">
         <div class="control">
-          <button>Compile</button>
-          <button>Run</button>
-          <button>Reset</button>
+          <button onclick="compile()">Compile</button>
+          <button onclick="run()">Run</button>
+          <button id="pause" disabled="true" onclick="stop()">Pause</button>
+          <button onclick="next()">Next</button>
+          <button onclick="reset();">Reset</button>
+          Speed:
+          <input
+            type="range"
+            min="1000"
+            max="10000"
+            value="1000"
+            class="slider"
+            id="speed"
+          />
+          <span id="freq">500 mHz</span>
         </div>
         <div id="editor" contenteditable="true" spellcheck="false">
           <div>load 6</div>
@@ -28,6 +46,7 @@
           <div>4</div>
         </div>
         <div id="memory"></div>
+        <div id="state">Click Run to start</div>
       </div>
 
       <object id="diagram" data="Diagram.svg" type="image/svg+xml"></object>

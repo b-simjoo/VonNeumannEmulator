@@ -5,7 +5,7 @@ type ID = string | null;
 type IDs = Array<string> | null;
 
 function HEX(value: number, pad = 4): string {
-  return value.toString(16).padStart(pad, "0");
+  return (value || 0).toString(16).padStart(pad, "0");
 }
 
 abstract class Component {
@@ -51,6 +51,8 @@ class Multiplexer extends Component {
     this.selectNUM = selectNUM;
     this.inputsLEDs = inputsLEDs;
     this.inputs = Array<number>(inputCount);
+    this.update();
+    this.onOutputChanged();
   }
 
   public set select(value: number) {
@@ -101,6 +103,7 @@ class Memory extends Component {
     this.outputNUM = outputNUM;
 
     this._memArray = Array<number>(memSize);
+    this.onOutputChanged();
   }
 
   public get memArray(): number[] {
@@ -124,7 +127,7 @@ class Memory extends Component {
         "writing to memory,  address: " + this._addr + " data: " + this.data
       );
       this.memArray[this._addr] = this.data;
-      this.onArrayChange?.(this, this.addr, this.data);
+      this.onArrayChange?.(this, this._addr || 0, this.data || 0);
     }
   }
 
@@ -164,6 +167,7 @@ class Register extends Component {
     this.nibbleCount = Math.ceil(bitCount / 4);
     this.valueNUM = valueNUM;
     this.outputNUM = outputNUM;
+    this.onOutputChanged();
   }
 
   public tick(): void {
@@ -242,6 +246,7 @@ class ALU extends Component {
     super(diagram);
     this.outNUM = outNUM;
     this.funcName = funcName;
+    this.onOutputChanged();
   }
 
   public set portA(value: number) {
@@ -287,6 +292,7 @@ class Decoder extends Component {
         },
       })
     );
+    this.onOutputChanged();
   }
 
   public set input(value: number) {
@@ -322,6 +328,7 @@ class Encoder extends Component {
     this.outNum = outNum;
     this.nibbleCount = Math.ceil(inputCount / 16);
     this.inputs = Array<boolean>(inputCount);
+    this.onOutputChanged();
   }
 
   public setInput(key: number, value: boolean) {
@@ -491,6 +498,7 @@ class Diagram {
       this.AR.data = v % Math.pow(2, 12);
       this.PC.data = v % Math.pow(2, 12);
     };
+    this.signalLED(ids.LED_CLK, this.CLKup);
   }
 
   public tick() {
@@ -552,8 +560,8 @@ class Diagram {
         (this.IncDec.and && this.SeqDec.T4) ||
         (this.IncDec.comp && this.SeqDec.T2) ||
         (this.IncDec.lsl && this.SeqDec.T2) ||
-        (this.IncDec.jump && this.SeqDec.t2) ||
-        (this.IncDec.jumpz && this.SeqDec.t2);
+        (this.IncDec.jump && this.SeqDec.T2) ||
+        (this.IncDec.jumpz && this.SeqDec.T2);
 
       this.ALUEncoder.setInput(
         0,
