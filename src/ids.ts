@@ -1,4 +1,4 @@
-const ids = {
+export const ids = {
   LED_SIG_LOADM: ["path562", "path1370"],
   LED_SIG_LOADAR: ["path570", "path1378"],
   LED_SIG_LOADPC: ["path1100", "path1558"],

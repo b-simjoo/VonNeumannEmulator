@@ -4,10 +4,11 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="assets/style.css" />
+    <link rel="stylesheet" href="assets/style.scss" />
     <link rel="stylesheet" href="assets/codeEditor.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <script type="module" src="app.ts"></script>
     <link
       href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap"
       rel="stylesheet"
@@ -15,51 +16,66 @@
     <title>VonNeumannEmulator</title>
   </head>
   <body>
-    <div class="container">
-      <div class="left-panel">
-        <div class="control">
-          <button onclick="compile()">Compile</button>
-          <button onclick="run()">Run</button>
-          <button id="pause" disabled="true" onclick="stop()">Pause</button>
-          <button onclick="next()">Next</button>
-          <button onclick="reset();">Reset</button>
-          <div style="display: inline-block">
-            Speed:
-            <input
-              type="range"
-              min="1000"
-              max="10000"
-              value="1000"
-              class="slider"
-              id="speed"
-            />
-            <span id="freq">500 mHz</span>
+    <div class="container-fluid wrapper p0">
+      <div class="row">
+        <div class="col-5 d-flex flex-column">
+          <div class="control">
+            <button id="btn-compile">Compile</button>
+            <button id="btn-run">Run</button>
+            <button id="btn-pause" disabled="true">Pause</button>
+            <button id="btn-next">Next</button>
+            <button id="btn-reset">Reset</button>
+            <div style="display: inline-block">
+              Speed:
+              <input
+                type="range"
+                min="500"
+                max="10000"
+                value="1000"
+                class="slider"
+                id="rng-speed"
+              />
+              <span id="freq">500 mHz</span>
+            </div>
           </div>
+          <div class="row flex-grow-1 g-0">
+            <div
+              class="col-10"
+              id="editor"
+              contenteditable="true"
+              spellcheck="false"
+            >
+              <div>load 6</div>
+              <div>add 7</div>
+              <div>store 8</div>
+              <div>jump 3</div>
+              <div><br /></div>
+              <div><br /></div>
+              <div>5</div>
+              <div>4</div>
+            </div>
+            <div class="col-2" id="memory"></div>
+          </div>
+          <div id="state">Click Run to start</div>
         </div>
-        <div id="editor" contenteditable="true" spellcheck="false">
-          <div>load 6</div>
-          <div>add 7</div>
-          <div>store 8</div>
-          <div>jump 3</div>
-          <div><br /></div>
-          <div><br /></div>
-          <div>5</div>
-          <div>4</div>
+
+        <div class="col-7">
+          <object
+            id="diagram"
+            data="assets/Diagram.svg"
+            type="image/svg+xml"
+          ></object>
         </div>
-        <div id="memory"></div>
-        <div id="state">Click Run to start</div>
       </div>
-
-      <object
-        id="diagram"
-        data="assets/Diagram.svg"
-        type="image/svg+xml"
-      ></object>
+      <div class="row credit text-center">
+        <small
+          >Created By B.Simjoo, With the guidance of DR.Daryanavard (University
+          of Hormozgan)<br />Source code:
+          <a href="https://github.com/b-simjoo/VonNeumannEmulator"
+            >Github</a
+          ></small
+        >
+      </div>
     </div>
-
-    <script src="ids.ts"></script>
-    <script src="diagram.ts"></script>
-    <script src="codeEditor.ts"></script>
-    <script src="app.ts"></script>
   </body>
 </html>

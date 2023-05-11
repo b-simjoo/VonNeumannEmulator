@@ -24,11 +24,11 @@
      inkscape:deskcolor="#505050"
      showgrid="false"
      inkscape:zoom="1.0124156"
-     inkscape:cx="268.66437"
-     inkscape:cy="515.10467"
+     inkscape:cx="60.745804"
+     inkscape:cy="516.0924"
      inkscape:window-width="1600"
      inkscape:window-height="836"
-     inkscape:window-x="1440"
+     inkscape:window-x="0"
      inkscape:window-y="27"
      inkscape:window-maximized="1"
      inkscape:current-layer="svg1494" />
@@ -5858,7 +5858,7 @@
          style="font-size:16px;font-family:'Fira Code';-inkscape-font-specification:'Fira Code, Normal';white-space:pre;shape-inside:url(#rect983);fill:#ffffff;fill-opacity:0.779045;stroke:#ffffff;stroke-width:3.77953"><tspan
            x="4.0644531"
            y="704.24414"
-           id="tspan3429">Cre</tspan></text>
+           id="tspan2774">Cre</tspan></text>
     </switch>
   </g>
   <path
@@ -6030,13 +6030,13 @@
          xml:space="preserve"><tspan
            x="195"
            y="661"
-           id="tspan3431">Dec
+           id="tspan2776">Dec
 </tspan><tspan
            x="195"
            y="681.336"
-           id="tspan3435"><tspan
+           id="tspan2780"><tspan
              style="font-family:'Fira Code';-inkscape-font-specification:'Fira Code, Normal'"
-             id="tspan3433">3-&gt;8</tspan></tspan></text>
+             id="tspan2778">3-&gt;8</tspan></tspan></text>
     </switch>
   </g>
   <circle
@@ -6351,16 +6351,4 @@
          id="text1220">0</text>
     </switch>
   </g>
-  <text
-     xml:space="preserve"
-     transform="translate(-1.4167193,59.257533)"
-     id="text1858"
-     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.3333px;font-family:Arial;-inkscape-font-specification:'Arial, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;white-space:pre;shape-inside:url(#rect1860);fill:#000000;fill-opacity:1;stroke:none;stroke-width:3.77953;stroke-opacity:1"><tspan
-       x="8.1015625"
-       y="707.87136"
-       id="tspan3437">Created By Behnam Simjoo
-</tspan><tspan
-       x="8.1015625"
-       y="724.53798"
-       id="tspan3439">With the guidance of DR.Daryanavard</tspan></text>
 </svg>

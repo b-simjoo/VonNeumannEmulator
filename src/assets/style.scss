@@ -1,0 +1,87 @@
+@import "bootstrap/scss/bootstrap";
+
+html{
+    max-height: 100vh;
+    width: 100%;
+}
+
+body{
+    max-height: 100%;
+}
+
+*{
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+    scroll-behavior: smooth;
+}
+
+.wrapper{
+    max-height: 100%;
+}
+
+.slider{
+    transform: translateY(5px);
+}
+
+#editor, #memory{
+    display: block;
+    border: 1px solid silver;
+    border-radius: 10px;
+    background-color: azure;
+}
+
+#diagram{
+    max-height: 100%;
+    width: 100%;
+}
+
+#memory{
+    position: relative;
+    font-family: 'Fira Code',
+        'Roboto Mono',
+        monospace;
+
+    table{
+        position: absolute;
+        display: block;
+        max-height: 100%;
+        overflow: scroll;
+        left: 50%;
+        transform: translateX(-50%);
+        gap: 0;
+    }
+
+    tr {
+        transition: background-color 1s;
+    }
+
+    thead td{
+        text-align: center;
+        border-bottom: 2px solid #111;
+        padding-right: 2px;
+    }
+
+    td.zero {
+        color: darkgrey;
+    }
+
+    .changed {
+        background-color: chartreuse;
+    }
+
+    td.addr{
+        border-right: 2px solid #111;
+    }
+    td.data{
+        padding-left: 5px;
+    }
+}
+#state{
+    font-family: 'Fira Code',
+            'Roboto Mono',
+            monospace;
+    background-color: burlywood;
+    border: 1px solid #111;
+    padding: 2px;
+}

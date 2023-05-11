@@ -1,10 +1,10 @@
-//let diagram: XMLDocument;
+import { ids } from "./ids";
 
 type OutputCallback = (value: number) => void;
 type ID = string | null;
 type IDs = Array<string> | null;
 
-function HEX(value: number, pad = 4): string {
+export function HEX(value: number, pad = 4): string {
   return (value || 0).toString(16).padStart(pad, "0");
 }
 
@@ -354,7 +354,7 @@ class Encoder extends Component {
   }
 }
 
-class Diagram {
+export class Diagram {
   ledGreen = "#00FF00";
   ledGray = "#E6E6E6";
 
@@ -501,91 +501,91 @@ class Diagram {
     this.signalLED(ids.LED_CLK, this.CLKup);
   }
 
+  public signals() {
+    this.CommonBus.select =
+      this.SeqDec.T1 ||
+      (this.SeqDec.T3 && this.IncDec.load) ||
+      (this.IncDec.Add && this.SeqDec.T2) ||
+      (this.IncDec.And && this.SeqDec.T3)
+        ? 0 // select mem
+        : this.SeqDec.T0
+        ? 2 // select PC
+        : this.IncDec.store && this.SeqDec.T3
+        ? 4 // select AC
+        : this.SeqDec.T2 &&
+          (this.IncDec.load ||
+            this.IncDec.store ||
+            this.IncDec.add ||
+            this.IncDec.jump ||
+            (this.IncDec.jumpz && this.ACZ))
+        ? 7 // select IR
+        : 0; // Default
+    this.CommonBus.update();
+    console.log("common bus select: " + this.CommonBus.select);
+
+    this.enPC = this.SeqDec.T0;
+
+    this.loadAC =
+      (this.IncDec.load && this.SeqDec.T4) ||
+      (this.IncDec.add && this.SeqDec.T4) ||
+      (this.IncDec.and && this.SeqDec.T4) ||
+      (this.IncDec.comp && this.SeqDec.T2) ||
+      (this.IncDec.lsl && this.SeqDec.T2);
+
+    this.loadM = this.IncDec.store && this.SeqDec.T3;
+
+    this.loadAR =
+      (this.IncDec.load && this.SeqDec.T2) ||
+      (this.IncDec.store && this.SeqDec.T2) ||
+      (this.IncDec.add && this.SeqDec.T2) ||
+      (this.IncDec.and && this.SeqDec.T3) ||
+      this.SeqDec.T0;
+
+    this.loadPC =
+      this.SeqDec.T2 && (this.IncDec.jump || (this.IncDec.jumpz && this.ACZ));
+
+    this.loadDR =
+      this.SeqDec.T3 &&
+      (this.IncDec.load || this.IncDec.add || this.IncDec.And);
+
+    this.loadIR = this.SeqDec.T1;
+
+    this.rstSC =
+      (this.IncDec.load && this.SeqDec.T4) ||
+      (this.IncDec.store && this.SeqDec.T3) ||
+      (this.IncDec.add && this.SeqDec.T4) ||
+      (this.IncDec.and && this.SeqDec.T4) ||
+      (this.IncDec.comp && this.SeqDec.T2) ||
+      (this.IncDec.lsl && this.SeqDec.T2) ||
+      (this.IncDec.jump && this.SeqDec.T2) ||
+      (this.IncDec.jumpz && this.SeqDec.T2);
+
+    this.ALUEncoder.setInput(
+      0,
+      this.signalLED(ids.LED_SIG_ADD_T4, this.IncDec.add && this.SeqDec.T4)
+    );
+    this.ALUEncoder.setInput(
+      1,
+      this.signalLED(ids.LED_SIG_AND_T4, this.IncDec.and && this.SeqDec.T4)
+    );
+    this.ALUEncoder.setInput(
+      2,
+      this.signalLED(ids.LED_SIG_COMP_T2, this.IncDec.comp && this.SeqDec.T2)
+    );
+    this.ALUEncoder.setInput(
+      3,
+      this.signalLED(ids.LED_SIG_LSL_T2, this.IncDec.lsl && this.SeqDec.T2)
+    );
+    this.ALUEncoder.setInput(
+      4,
+      this.signalLED(ids.LED_SIG_LOAD_T4, this.IncDec.load && this.SeqDec.T4)
+    );
+  }
+
   public tick() {
-    if (this.CLKup) {
-      this.tickRegisters();
-    } else {
-      this.CommonBus.select =
-        this.SeqDec.T1 ||
-        (this.SeqDec.T3 && this.IncDec.load) ||
-        (this.IncDec.Add && this.SeqDec.T2) ||
-        (this.IncDec.And && this.SeqDec.T3)
-          ? 0 // select mem
-          : this.SeqDec.T0
-          ? 2 // select PC
-          : this.IncDec.store && this.SeqDec.T3
-          ? 4 // select AC
-          : this.SeqDec.T2 &&
-            (this.IncDec.load ||
-              this.IncDec.store ||
-              this.IncDec.add ||
-              this.IncDec.jump ||
-              (this.IncDec.jumpz && this.ACZ))
-          ? 7 // select IR
-          : 0; // Default
-      this.CommonBus.update();
-      console.log("common bus select: " + this.CommonBus.select);
-
-      this.enPC = this.SeqDec.T0;
-
-      this.loadAC =
-        (this.IncDec.load && this.SeqDec.T4) ||
-        (this.IncDec.add && this.SeqDec.T4) ||
-        (this.IncDec.and && this.SeqDec.T4) ||
-        (this.IncDec.comp && this.SeqDec.T2) ||
-        (this.IncDec.lsl && this.SeqDec.T2);
-
-      this.loadM = this.IncDec.store && this.SeqDec.T3;
-
-      this.loadAR =
-        (this.IncDec.load && this.SeqDec.T2) ||
-        (this.IncDec.store && this.SeqDec.T2) ||
-        (this.IncDec.add && this.SeqDec.T2) ||
-        (this.IncDec.and && this.SeqDec.T3) ||
-        this.SeqDec.T0;
-
-      this.loadPC =
-        this.SeqDec.T2 && (this.IncDec.jump || (this.IncDec.jumpz && this.ACZ));
-
-      this.loadDR =
-        this.SeqDec.T3 &&
-        (this.IncDec.load || this.IncDec.add || this.IncDec.And);
-
-      this.loadIR = this.SeqDec.T1;
-
-      this.rstSC =
-        (this.IncDec.load && this.SeqDec.T4) ||
-        (this.IncDec.store && this.SeqDec.T3) ||
-        (this.IncDec.add && this.SeqDec.T4) ||
-        (this.IncDec.and && this.SeqDec.T4) ||
-        (this.IncDec.comp && this.SeqDec.T2) ||
-        (this.IncDec.lsl && this.SeqDec.T2) ||
-        (this.IncDec.jump && this.SeqDec.T2) ||
-        (this.IncDec.jumpz && this.SeqDec.T2);
-
-      this.ALUEncoder.setInput(
-        0,
-        this.signalLED(ids.LED_SIG_ADD_T4, this.IncDec.add && this.SeqDec.T4)
-      );
-      this.ALUEncoder.setInput(
-        1,
-        this.signalLED(ids.LED_SIG_AND_T4, this.IncDec.and && this.SeqDec.T4)
-      );
-      this.ALUEncoder.setInput(
-        2,
-        this.signalLED(ids.LED_SIG_COMP_T2, this.IncDec.comp && this.SeqDec.T2)
-      );
-      this.ALUEncoder.setInput(
-        3,
-        this.signalLED(ids.LED_SIG_LSL_T2, this.IncDec.lsl && this.SeqDec.T2)
-      );
-      this.ALUEncoder.setInput(
-        4,
-        this.signalLED(ids.LED_SIG_LOAD_T4, this.IncDec.load && this.SeqDec.T4)
-      );
-    }
-    this.signalLED(ids.LED_CLK, this.CLKup);
-    this.CLKup = !this.CLKup;
+    this.signals();
+    this.tickRegisters();
+    this.signals();
   }
 
   tickRegisters() {

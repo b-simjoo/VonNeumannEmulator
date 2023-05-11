@@ -14,7 +14,7 @@ const asm = (el: HTMLElement) => {
   }
 };
 
-const Editor = (el: HTMLElement, highlight = asm, tab = "    ") => {
+export const Editor = (el: HTMLElement, highlight = asm, tab = "    ") => {
   const caret = () => {
     const range = window.getSelection()!.getRangeAt(0);
     const prefix = range.cloneRange();

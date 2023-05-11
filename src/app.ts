@@ -1,7 +1,11 @@
+// import * as bootstrap from "bootstrap";
+import { Diagram, HEX } from "./diagram";
+import { Editor } from "./codeEditor";
+
 let diagram: Diagram;
 let editor: HTMLElement | null;
 let memory: HTMLElement | null;
-let memBoxWidth = 8;
+let memBoxWidth = 1;
 let state: HTMLElement | null;
 let ops = ["load", "store", "add", "and", "jump", "jumpz", "comp", "lsl"];
 let RTLs = [
@@ -102,24 +106,31 @@ function ce(
 function renderMem() {
   return ce("table", () => {
     let rows = [
-      ce("tr", ce("th", " "), () => {
-        let cols = [];
-        for (let c = 0; c < memBoxWidth; c++) {
-          cols.push(ce("th", HEX(c)));
-        }
-        return cols;
+      // ce("tr", ce("th", " "), () => {
+      //   let cols = [];
+      //   for (let c = 0; c < memBoxWidth; c++) {
+      //     cols.push(ce("th", HEX(c)));
+      //   }
+      //   return cols;
+      // }),
+      ce("thead", () => {
+        let header = ce("td", "Memory");
+        (<HTMLElement>header).setAttribute("colspan", "2");
+        return [header];
       }),
     ];
     for (let i = 0; i < 4095; i += memBoxWidth) {
       rows.push(
-        ce("tr", ce("td", HEX(i, 3)), () => {
+        ce("tr", ce({ tagName: "td", cls: ["addr"] }, HEX(i, 3)), () => {
           let cols = [];
           for (let c = 0; c < memBoxWidth; c++) {
             cols.push(
               ce(
                 {
                   tagName: "td",
-                  cls: diagram.Mem.memArray[i + c] ? [] : ["zero"],
+                  cls: diagram.Mem.memArray[i + c]
+                    ? ["data"]
+                    : ["data", "zero"],
                 },
                 HEX(diagram.Mem.memArray[i + c])
               )
@@ -138,22 +149,21 @@ function resetMem() {
   memory = <HTMLElement>renderMem();
   document.getElementById("memory")?.append(memory);
   diagram.Mem.onArrayChange = (s, i, v) => {
-    let td =
-      memory?.childNodes[Math.floor(i / memBoxWidth) + 1]?.childNodes[
-        (i % memBoxWidth) + 1
-      ];
-    (<HTMLElement>td).classList.add("changed");
-    if (v) (<HTMLElement>td).classList.remove("zero");
-    else (<HTMLElement>td).classList.add("zero");
-    (<HTMLElement>td).innerText = HEX(v, 4);
+    let changedTr = memory?.childNodes[Math.floor(i / memBoxWidth) + 1];
+    let changedTd = changedTr?.childNodes[1];
+    (<HTMLElement>changedTr).classList.add("changed");
+    if (v) (<HTMLElement>changedTd).classList.remove("zero");
+    else (<HTMLElement>changedTd).classList.add("zero");
+    (<HTMLElement>changedTd).innerText = HEX(v, 4);
+    (<HTMLElement>changedTr)?.scrollIntoView({ block: "center" });
     setTimeout(() => {
-      (<HTMLElement>td).classList.remove("changed");
+      (<HTMLElement>changedTr).classList.remove("changed");
     }, 5000);
   };
   if (state) state.innerText = `Memory cleared, Click Compile to load program`;
 }
 
-function compile() {
+export function compile() {
   let code = Array<string>();
   editor?.childNodes.forEach((node) => {
     if (node.nodeType === Node.TEXT_NODE) return;
@@ -176,15 +186,14 @@ function compile() {
 
 function tick() {
   diagram.tick();
-  diagram.tick();
   if (state)
     state.innerText = RTLs[diagram.IncDec.output][diagram.SeqDec.output];
 }
 
 let interval: number;
 
-function run() {
-  let stopBtn = <HTMLInputElement>document.getElementById("pause");
+export function run() {
+  let stopBtn = <HTMLInputElement>document.getElementById("btn-pause");
   stopBtn.disabled = false;
   tick();
   interval = setTimeout(() => {
@@ -192,27 +201,38 @@ function run() {
   }, timeout);
 }
 
-function stop() {
-  let stopBtn = <HTMLInputElement>document.getElementById("pause");
+export function stop() {
+  let stopBtn = <HTMLInputElement>document.getElementById("btn-pause");
   stopBtn.disabled = true;
   clearTimeout(interval);
 }
 
-function next() {
+export function next() {
   tick();
 }
 
-function reset() {
+export function reset() {
   stop();
   diagram = new Diagram(diagram.diagramSVG);
-  diagram.tick();
-  diagram.CLKup = false;
+  diagram.signals();
   resetMem();
 }
 
 let timeout = 1000;
 
-window.onload = function () {
+function changeTimeout() {
+  timeout =
+    10500 -
+    (<HTMLInputElement>document.getElementById("rng-speed"))?.valueAsNumber;
+  let freq = document.getElementById("freq");
+  if (freq) freq.innerHTML = `${Math.round(1000000 / timeout)} nHz`;
+  console.log(`timeout: ${timeout}`);
+}
+
+const height = window.innerHeight;
+
+function main() {
+  document.body.style.height = height.toString() + "px";
   console.clear();
   let svg = <XMLDocument>(
     (<HTMLObjectElement>document.getElementById("diagram"))?.contentDocument
@@ -229,17 +249,17 @@ window.onload = function () {
     compile();
   } else throw new Error("Could not find editor");
   state = document.getElementById("state");
-  let speedSlider = document.getElementById("speed");
+  let speedSlider = document.getElementById("rng-speed");
   if (speedSlider) {
-    timeout = 11000 - (<HTMLInputElement>speedSlider).valueAsNumber;
+    timeout = 10500 - (<HTMLInputElement>speedSlider).valueAsNumber;
     let freq = document.getElementById("freq");
     if (freq) freq.innerHTML = `${Math.round(1000000 / timeout)} nHz`;
-    console.log(`timeout: ${timeout}`);
-    speedSlider.oninput = () => {
-      timeout = 11000 - (<HTMLInputElement>speedSlider).valueAsNumber;
-      let freq = document.getElementById("freq");
-      if (freq) freq.innerHTML = `${Math.round(1000000 / timeout)} nHz`;
-      console.log(`timeout: ${timeout}`);
-    };
   }
-};
+}
+
+window.addEventListener("load", main);
+document.getElementById("btn-compile")?.addEventListener("click", compile);
+document.getElementById("btn-run")?.addEventListener("click", run);
+document.getElementById("btn-reset")?.addEventListener("click", reset);
+document.getElementById("btn-pause")?.addEventListener("click", stop);
+document.getElementById("rng-speed")?.addEventListener("input", changeTimeout);
